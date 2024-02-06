@@ -1,0 +1,19 @@
+[workspace]
+members = ["./overcast-client", "./overcast-server"]
+resolver = "2"
+
+[workspace.package]
+authors = ["Logan <logan.willem@grenoble-inp.org", "Virgile"]
+categories = ["games"]
+description = ""
+documentation = ""
+edition = "2021"
+homepage = ""
+keywords = ["gamedev"]
+license = ""
+license-file = ""
+publish = false
+readme = "./README.md"
+repository = "https://github.com/VirgileHenry/overcast"
+rust-version = "1.75"
+version = "0.1.0"
