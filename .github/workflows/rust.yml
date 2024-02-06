@@ -34,7 +34,7 @@ jobs:
           components: clippy
           rust-version: stable
       - name: Setup | Alsa
-        run: sudo apt install libasound2-dev
+        run: sudo apt install libasound2-dev libudev-dev
       - name: Build | Lint
         run: cargo clippy
 
@@ -50,7 +50,7 @@ jobs:
         with:
           rust-version: stable
       - name: Setup | Alsa
-        run: sudo apt install libasound2-dev
+        run: sudo apt install libasound2-dev libudev-dev
       - name: Build | Check
         run: cargo check
 
@@ -69,6 +69,6 @@ jobs:
         with:
           rust-version: stable
       - name: Setup | Alsa
-        run: sudo apt install libasound2-dev
+        run: sudo apt install libasound2-dev libudev-dev
       - name: Build | Build
         run: cargo build
