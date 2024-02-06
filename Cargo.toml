@@ -3,7 +3,7 @@ members = ["./overcast-client", "./overcast-server"]
 resolver = "2"
 
 [workspace.package]
-authors = ["Logan <logan.willem@grenoble-inp.org", "Virgile"]
+authors = ["Logan <logan.willem@grenoble-inp.org>", "Virgile"]
 categories = ["games"]
 description = ""
 documentation = ""
