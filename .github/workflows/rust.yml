@@ -5,9 +5,12 @@ on:
     branches:
       - master
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   format:
-    name: Check Format
+    name: Format
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:
@@ -72,3 +75,15 @@ jobs:
         run: sudo apt install libasound2-dev libudev-dev
       - name: Build | Build
         run: cargo build
+      - name: Build | Artifacts
+        uses: actions/upload-artifact@v4
+        id: artifacts
+        with:
+          name: bins
+          path: |
+            target/debug/overcast-client
+            target/debug/overcast-server
+          if-no-files-found: warn
+          retention-days: 10
+          compression-level: 6
+          overwrite: false
