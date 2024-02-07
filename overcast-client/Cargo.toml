@@ -1,17 +1,10 @@
 [package]
 name = "overcast-client"
-authors.workspace = true
-categories.workspace = true
-edition.workspace = true
-description.workspace = true
-documentation.workspace = true
-homepage.workspace = true
-keywords.workspace = true
-publish.workspace = true
-readme.workspace = true
-repository.workspace = true
-rust-version.workspace = true
-version.workspace = true
+version = "0.1.0"
+edition = "2021"
 
 [dependencies]
-bevy = "0.12.1"
+bevy = { version = "0.12.1", features = ["wayland"] }
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"

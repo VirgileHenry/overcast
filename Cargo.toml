@@ -1,9 +1,9 @@
 [workspace]
-members = ["./overcast-client", "./overcast-server"]
+members = ["overcast-client", "overcast-server", "overcast-core"]
 resolver = "2"
 
 [workspace.package]
-authors = ["Logan <logan.willem@grenoble-inp.org", "Virgile"]
+authors = ["Logan <logan.willem@grenoble-inp.org>", "Virgile <virgile.henry@grenoble-inp.org>"]
 categories = ["games"]
 description = ""
 documentation = ""
