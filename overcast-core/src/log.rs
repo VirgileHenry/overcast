@@ -116,12 +116,11 @@ fn test_log_manager() {
     }
 
     let output = TestOutput { output: Vec::new() };
-    let (manager, logger_1) = LogManager::new(output, LogLevel::Debug);
+    let (manager, logger) = LogManager::new(output, LogLevel::Debug);
     let handle = manager.start();
 
     {
-        let logger_1 = logger_1; // move logger 1 into this scope
-        
+        let logger_1 = logger; // move logger into this scope
         let logger_2 = logger_1.clone();
         
         logger_1.log("logger_1 message_1", LogLevel::Info);

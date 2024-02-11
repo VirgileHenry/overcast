@@ -1,14 +1,20 @@
 
-
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct Header {
+    pub from_client: u32,
+    pub size: u32,
+}
 
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ServerToClientTcpMessage {
     /// The server received the handshake, and accepted the client in the game.
     WelcomeIn,
-    /// The server disconnected the client,
-    /// and is expecting no further responses.
-    GetOut,
+    /// The server reach the max allowed amount of clients and is refusing the connection.
+    ServerFull,
+    /// The server is shuting down, and disconnected the client.
+    /// The client is expected to close it's socket.
+    ServerClosing,
 }
 
 
