@@ -1,9 +1,20 @@
 [package]
 name = "overcast-client"
 version = "0.1.0"
-edition = "2021"
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+description.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+publish.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
+overcast-core = { path = "../overcast-core" }
 bevy = { version = "0.12.1", features = ["wayland"] }
 
 [target.wasm32-unknown-unknown]
