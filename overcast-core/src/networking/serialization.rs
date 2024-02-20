@@ -10,41 +10,36 @@ pub trait Serializable: Sized {
     /// Writes the object into the target slice,
     /// and returns the amount of bytes written.
     /// 
-    /// Returns an error if there is not enough space in the slice.
-    fn serialize(&self, into: &mut [u8]) -> Result<usize, ()>;
+    /// This will panic if the serialized size if bigger than the provided slice,
+    /// And it is the caller responsability to ensure the slice is big enough.
+    /// The size needed is given by MAX_BIN_SIZE.
+    fn serialize(&self, into: &mut [u8]) -> usize;
     /// Builds the object from the given slice.
     /// 
     /// Returns an error if there is not enough provided bytes.
-    fn deserialize(from: &[u8]) -> Result<Self, ()>;
+    /// This will panic if the slice does not contains enough bytes,
+    /// And it is the caller responsability to ensure the slice is big enough.
+    /// The size needed is given by MAX_BIN_SIZE.
+    fn deserialize(from: &[u8]) -> Self;
 }
 
 macro_rules! impl_serializable_for_primitive {
     ($ty:ty, $byte_count:expr) => {
         impl Serializable for $ty {
             const MAX_BIN_SIZE: usize = $byte_count;
-            fn serialize(&self, into: &mut [u8]) -> Result<usize, ()> {
-                if into.len() < Self::MAX_BIN_SIZE {
-                    Err(())
+            fn serialize(&self, into: &mut [u8]) -> usize {
+                let bytes = self.to_be_bytes();
+                for i in 0..$byte_count {
+                    into[i] = bytes[i]
                 }
-                else {
-                    let bytes = self.to_be_bytes();
-                    for i in 0..$byte_count {
-                        into[i] = bytes[i]
-                    }
-                    Ok(Self::MAX_BIN_SIZE)
-                }
+                Self::MAX_BIN_SIZE
             }
-            fn deserialize(from: &[u8]) -> Result<Self, ()> {
-                if from.len() < Self::MAX_BIN_SIZE {
-                    Err(())
+            fn deserialize(from: &[u8]) -> Self {
+                let mut bytes = [0u8; $byte_count];
+                for i in 0..$byte_count {
+                    bytes[i] = from[i];
                 }
-                else {
-                    let mut bytes = [0u8; $byte_count];
-                    for i in 0..$byte_count {
-                        bytes[i] = from[i];
-                    }
-                    Ok(<$ty>::from_be_bytes(bytes))
-                }
+                <$ty>::from_be_bytes(bytes)
             }
         }
     };
@@ -76,8 +71,8 @@ mod test {
 
         let s1 = SerTestNoField;
         let mut buffer = [0u8; SerTestNoField::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestNoField::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestNoField::deserialize(&buffer);
         assert!(s1 == s2);
 
         // == test structs with unnamed fields ==
@@ -92,14 +87,14 @@ mod test {
 
         let s1 = SerTestOneField(3.1415);
         let mut buffer = [0u8; SerTestOneField::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestOneField::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestOneField::deserialize(&buffer);
         assert!(s1 == s2);
 
         let s1 = SerTestMultiField(1, 5, 354, 768, -3, -5480, 3456, -15338, 3.14, -764.89);
         let mut buffer = [0u8; SerTestMultiField::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestMultiField::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestMultiField::deserialize(&buffer);
         assert!(s1 == s2);
 
         // == test structs with named fields
@@ -112,8 +107,8 @@ mod test {
 
         let s1 = SerTestOneNamed { foo: 0.0234 };
         let mut buffer = [0u8; SerTestOneNamed::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestOneNamed::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestOneNamed::deserialize(&buffer);
         assert!(s1 == s2);
 
         #[derive(overcast_macros::Serializable)]
@@ -127,8 +122,8 @@ mod test {
 
         let s1 = SerTestMultiNamed { foo: 0.0234, bar: 4, baz: -34762672, qux: -43 };
         let mut buffer = [0u8; SerTestMultiNamed::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestMultiNamed::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestMultiNamed::deserialize(&buffer);
         assert!(s1 == s2);
 
         // == test empty enum ==
@@ -143,18 +138,18 @@ mod test {
 
         let s1 = SerTestEmptyEnum::Foo;
         let mut buffer = [0u8; SerTestEmptyEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestEmptyEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestEmptyEnum::deserialize(&buffer);
         assert!(s1 == s2);
         let s1 = SerTestEmptyEnum::Bar;
         let mut buffer = [0u8; SerTestEmptyEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestEmptyEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestEmptyEnum::deserialize(&buffer);
         assert!(s1 == s2);
         let s1 = SerTestEmptyEnum::Baz;
         let mut buffer = [0u8; SerTestEmptyEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestEmptyEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestEmptyEnum::deserialize(&buffer);
         assert!(s1 == s2);
 
         // == test enum with unnamed fields == 
@@ -169,18 +164,18 @@ mod test {
 
         let s1 = SerTestUnnamedEnum::Foo(835473, 3.14157628);
         let mut buffer = [0u8; SerTestUnnamedEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestUnnamedEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestUnnamedEnum::deserialize(&buffer);
         assert!(s1 == s2);
         let s1 = SerTestUnnamedEnum::Bar(-128);
         let mut buffer = [0u8; SerTestUnnamedEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestUnnamedEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestUnnamedEnum::deserialize(&buffer);
         assert!(s1 == s2);
         let s1 = SerTestUnnamedEnum::Baz(-87623729867323, 618351835193651573, -12871271872812);
         let mut buffer = [0u8; SerTestUnnamedEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestUnnamedEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestUnnamedEnum::deserialize(&buffer);
         assert!(s1 == s2);
 
         // == test with enums and named fields
@@ -207,15 +202,15 @@ mod test {
             f2: 3.17861293,
         };
         let mut buffer = [0u8; SerTestNamedEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestNamedEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestNamedEnum::deserialize(&buffer);
         assert!(s1 == s2);
         let s1 = SerTestNamedEnum::Bar {
             f1: -73
         };
         let mut buffer = [0u8; SerTestNamedEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestNamedEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestNamedEnum::deserialize(&buffer);
         assert!(s1 == s2);
         let s1 = SerTestNamedEnum::Baz{
             f1: -87623729867323,
@@ -223,8 +218,8 @@ mod test {
             f3: -12871271872812
         };
         let mut buffer = [0u8; SerTestNamedEnum::MAX_BIN_SIZE];
-        s1.serialize(&mut buffer).unwrap();
-        let s2 = SerTestNamedEnum::deserialize(&buffer).unwrap();
+        s1.serialize(&mut buffer);
+        let s2 = SerTestNamedEnum::deserialize(&buffer);
         assert!(s1 == s2);
     }
 }

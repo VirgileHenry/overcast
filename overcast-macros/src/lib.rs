@@ -21,21 +21,15 @@ fn impl_derive_serializable(ast: syn::DeriveInput) -> proc_macro::TokenStream {
             quote!(
                 impl Serializable for #ident {
                     const MAX_BIN_SIZE: usize = { #(#size)* };
-                    fn serialize(&self, into: &mut [u8]) -> Result<usize, ()> {
-                        if into.len() < Self::MAX_BIN_SIZE { Err(()) }
-                        else {
-                            let mut offset = 0;
-                            #( #fields_serialization )*
-                            Ok(offset)
-                        }
+                    fn serialize(&self, into: &mut [u8]) -> usize {
+                        let mut offset = 0;
+                        #( #fields_serialization )*
+                        offset
                     }
-                    fn deserialize(from: &[u8]) -> Result<Self, ()> {
-                        if from.len() < Self::MAX_BIN_SIZE { Err(()) }
-                        else {
-                            let mut offset = 0;
-                            #( #fields_deserialization )*
-                            Ok( #result_struct )
-                        }
+                    fn deserialize(from: &[u8]) -> Self {
+                        let mut offset = 0;
+                        #( #fields_deserialization )*
+                        #result_struct
                     }
                 }
             )
@@ -63,7 +57,7 @@ fn impl_derive_serializable(ast: syn::DeriveInput) -> proc_macro::TokenStream {
                 .map(|(field_deser, result)| {
                     quote!(
                         #( #field_deser )*
-                        Ok( #ident::#result )
+                        #ident::#result
                     )
                 }).collect::<Vec<_>>();
 
@@ -76,12 +70,12 @@ fn impl_derive_serializable(ast: syn::DeriveInput) -> proc_macro::TokenStream {
                 match self {
                     #(
                         #ident::#results_variants => {
-                            <u8 as Serializable>::serialize(&#variants_indices, &mut into[0..1])?;
+                            <u8 as Serializable>::serialize(&#variants_indices, &mut into[0..1]);
                             let mut offset = 1;
                             #(
                                 #fields_serializations
                             )*
-                            Ok(offset)
+                            offset
                         }
                     )*
                     _ => unreachable!(),
@@ -95,7 +89,7 @@ fn impl_derive_serializable(ast: syn::DeriveInput) -> proc_macro::TokenStream {
                             #create_variants
                         }
                     )*
-                    _ => Err(())
+                    _ => unreachable!()
                 }
             );
 
@@ -108,19 +102,13 @@ fn impl_derive_serializable(ast: syn::DeriveInput) -> proc_macro::TokenStream {
 
                 impl Serializable for #ident {
                     const MAX_BIN_SIZE: usize = { 1 + #max_size };
-                    fn serialize(&self, into: &mut [u8]) -> Result<usize, ()> {
-                        if into.len() < Self::MAX_BIN_SIZE { Err(()) }
-                        else {
-                            #enum_serialization
-                        }
+                    fn serialize(&self, into: &mut [u8]) -> usize {
+                        #enum_serialization
                     }
-                    fn deserialize(from: &[u8]) -> Result<Self, ()> {
-                        if from.len() < Self::MAX_BIN_SIZE { Err(()) }
-                        else {
-                            let variant_index: u8 = <u8 as Serializable>::deserialize(&from[0..1])?;
-                            let mut offset = 1;
-                            #enum_deserialization
-                        }
+                    fn deserialize(from: &[u8]) -> Self {
+                        let variant_index: u8 = <u8 as Serializable>::deserialize(&from[0..1]);
+                        let mut offset = 1;
+                        #enum_deserialization
                     }
                 }
             )
@@ -160,7 +148,7 @@ fn generate_fields_serialization(fields: &syn::Fields, use_fields_generated_name
             };
             let field_type = &field.ty;
             quote!(
-                <#field_type as Serializable>::serialize(#field_ident, &mut into[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE])?;
+                <#field_type as Serializable>::serialize(#field_ident, &mut into[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE]);
                 offset += <#field_type as Serializable>::MAX_BIN_SIZE;
             )
         }).collect::<Vec<_>>(),
@@ -175,7 +163,7 @@ fn generate_fields_serialization(fields: &syn::Fields, use_fields_generated_name
             };
             let field_type = &field.ty;
             quote!(
-                <#field_type as Serializable>::serialize(#index, &mut into[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE])?;
+                <#field_type as Serializable>::serialize(#index, &mut into[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE]);
                 offset += <#field_type as Serializable>::MAX_BIN_SIZE;
             )
         }).collect::<Vec<_>>(),
@@ -191,7 +179,7 @@ fn generate_fields_deserialization(fields: &syn::Fields) -> Vec<proc_macro2::Tok
             let decl_ident = field.ident.as_ref().unwrap();
             let field_type = &field.ty;
             quote!(
-                let #decl_ident = <#field_type as Serializable>::deserialize(&from[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE])?;
+                let #decl_ident = <#field_type as Serializable>::deserialize(&from[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE]);
                 offset += <#field_type as Serializable>::MAX_BIN_SIZE;
             )
         }).collect::<Vec<_>>(),
@@ -199,7 +187,7 @@ fn generate_fields_deserialization(fields: &syn::Fields) -> Vec<proc_macro2::Tok
             let decl_ident = format_ident!("field_{}", i);
             let field_type = &field.ty;
             quote!(
-                let #decl_ident = <#field_type as Serializable>::deserialize(&from[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE])?;
+                let #decl_ident = <#field_type as Serializable>::deserialize(&from[offset..offset+<#field_type as Serializable>::MAX_BIN_SIZE]);
                 offset += <#field_type as Serializable>::MAX_BIN_SIZE;
             )
         }).collect::<Vec<_>>(),

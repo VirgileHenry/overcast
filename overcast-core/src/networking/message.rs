@@ -4,9 +4,14 @@ const fn const_max(a: usize, b: usize) -> usize {
     if a > b { a } else { b }
 }
 
-
-pub const HEADER_SERIALIZED_SIZE: usize = Header::MAX_BIN_SIZE;
-pub const MAX_SERVER_MESSAGE_SIZE: usize = const_max(ServerToClientTcpMessage::MAX_BIN_SIZE, ServerToClientUdpMessage::MAX_BIN_SIZE); // todo : programatically
+pub const MAX_SERVER_MESSAGE_SIZE: usize = const_max(
+    ServerToClientTcpMessage::MAX_BIN_SIZE,
+    ServerToClientUdpMessage::MAX_BIN_SIZE
+);
+pub const MAX_CLIENT_MESSAGE_SIZE: usize = const_max(
+    ClientToServerTcpMessage::MAX_BIN_SIZE,
+    ClientToServerUdpMessage::MAX_BIN_SIZE,
+);
 
 #[derive(overcast_macros::Serializable)]
 pub struct Header {
