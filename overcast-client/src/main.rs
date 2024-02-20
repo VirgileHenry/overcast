@@ -1,7 +1,14 @@
-use std::f32::consts::PI;
 use std::time::Duration;
+use std::{f32::consts::PI, str::FromStr};
 
-use bevy::{animation::RepeatAnimation, pbr::CascadeShadowConfigBuilder, prelude::*};
+use bevy::window::PresentMode;
+use bevy::{
+    animation::RepeatAnimation, pbr::CascadeShadowConfigBuilder, prelude::*, window::CursorGrabMode,
+};
+use camera::{camera_animation_control, create_camera};
+
+use crate::camera::CameraController;
+mod camera;
 
 fn main() {
     App::new()
@@ -13,7 +20,11 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(
             Update,
-            (setup_scene_once_loaded, keyboard_animation_control),
+            (
+                setup_scene_once_loaded,
+                keyboard_animation_control,
+                camera_animation_control,
+            ),
         )
         .run();
 }
@@ -22,11 +33,14 @@ fn main() {
 struct Animations(Vec<Handle<AnimationClip>>);
 
 fn setup(
+    windows: Query<&mut Window>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    window_setup(windows);
+
     // Insert a resource with the current scene information
     commands.insert_resource(Animations(vec![
         asset_server.load("models/animated/Fox.glb#Animation2"),
@@ -35,11 +49,8 @@ fn setup(
     ]));
 
     // Camera
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(100.0, 100.0, 150.0)
-            .looking_at(Vec3::new(0.0, 20.0, 0.0), Vec3::Y),
-        ..default()
-    });
+    let mut camera = commands.spawn(create_camera());
+    camera.insert(CameraController::default());
 
     // Plane
     commands.spawn(PbrBundle {
@@ -77,6 +88,17 @@ fn setup(
     println!("  - digit 1 / 3 / 5: play the animation <digit> times");
     println!("  - L: loop the animation forever");
     println!("  - return: change animation");
+}
+
+fn window_setup(mut windows: Query<&mut Window>) {
+    if let Ok(mut window) = windows.get_single_mut() {
+        window.cursor.visible = false;
+        window.cursor.grab_mode = CursorGrabMode::Confined;
+        window.focused = true;
+        window.prevent_default_event_handling = true; // Only for web, best to avoid side effects
+        window.title = String::from_str("Overcast").unwrap();
+        window.present_mode = PresentMode::AutoVsync;
+    }
 }
 
 // Once the scene is loaded, start the animation
