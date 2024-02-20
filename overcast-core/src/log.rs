@@ -8,15 +8,24 @@ use std::{
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LogLevel {
+    /// Critical logs indicates that a failure occured and we can't recover from it.
+    /// This will be followed by the app closing, or going into some error state.
     Critical = 0,
+    /// Warning logs indicates that something went wrong, but the error is not critical
+    /// and we can keep going.
     Warning = 1,
+    /// Info logs provide information about the state of the app,
+    /// when everything is going smoothely.
     Info = 2,
+    #[cfg(debug_assertions)]
+    /// Debug logs are only used during debug operations, to provide additional information.
     Debug = 3,
 }
 
 impl Display for LogLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
+            #[cfg(debug_assertions)]
             LogLevel::Debug => "DEBUG",
             LogLevel::Info => "INFO",
             LogLevel::Warning => "WARNING",

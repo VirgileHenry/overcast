@@ -1,5 +1,4 @@
 pub mod networking;
 pub mod log;
 
-pub use serde;
-pub use serde_binary;
+pub use overcast_macros::Serializable;

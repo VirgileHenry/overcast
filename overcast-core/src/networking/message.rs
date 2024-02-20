@@ -1,12 +1,21 @@
+use super::serialization::Serializable;
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct Header {
-    pub from_client: u32,
-    pub size: u32,
+const fn const_max(a: usize, b: usize) -> usize {
+    if a > b { a } else { b }
 }
 
 
-#[derive(serde::Serialize, serde::Deserialize)]
+pub const HEADER_SERIALIZED_SIZE: usize = Header::MAX_BIN_SIZE;
+pub const MAX_SERVER_MESSAGE_SIZE: usize = const_max(ServerToClientTcpMessage::MAX_BIN_SIZE, ServerToClientUdpMessage::MAX_BIN_SIZE); // todo : programatically
+
+#[derive(overcast_macros::Serializable)]
+pub struct Header {
+    pub client: u32,
+    pub size: u32,
+}
+
+#[derive(Debug, Clone)]
+#[derive(overcast_macros::Serializable)]
 pub enum ServerToClientTcpMessage {
     /// The server received the handshake, and accepted the client in the game.
     WelcomeIn,
@@ -18,27 +27,21 @@ pub enum ServerToClientTcpMessage {
 }
 
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone)]
+#[derive(overcast_macros::Serializable)]
 pub enum ServerToClientUdpMessage {
     
 }
 
 
-
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone)]
+#[derive(overcast_macros::Serializable)]
 pub enum ClientToServerTcpMessage {
-    /// First message.
-    /// The client wish to connect to the server.
-    Handshake,
-    /// The client loaded all client side resources,
-    /// and is ready to load the world.
-    ReadyToLoad,
-    /// The client is leaving the game,
-    /// and is expecting no further responses.
-    Leaving,
+
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone)]
+#[derive(overcast_macros::Serializable)]
 pub enum ClientToServerUdpMessage {
     
 }
