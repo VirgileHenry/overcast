@@ -13,6 +13,9 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
+# binary for web
+*.wasm
+
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -25,6 +28,9 @@ Cargo.lock
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# Game generated files (logs)
+*.log
 
 # NixOS shells to build this project
 *.nix
