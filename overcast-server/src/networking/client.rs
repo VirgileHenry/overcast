@@ -15,15 +15,17 @@ pub(super) struct Client {
     tcp_stream: TcpStream,
     recv_buffer: [u8; SERVER_RECV_BUFFER_SIZE],
     tcp_addr: SocketAddr,
+    player: bevy::prelude::Entity,
 }
 
 impl Client {
-    pub(crate) fn new(id: u32, tcp_stream: TcpStream, tcp_addr: SocketAddr) -> Client {
+    pub(crate) fn new(id: u32, tcp_stream: TcpStream, tcp_addr: SocketAddr, player: bevy::prelude::Entity) -> Client {
         Client {
             id,
             tcp_stream,
             recv_buffer: [0u8; SERVER_RECV_BUFFER_SIZE],
             tcp_addr,
+            player,
         }
     }
 

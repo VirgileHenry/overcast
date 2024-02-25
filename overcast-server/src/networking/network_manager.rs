@@ -29,7 +29,7 @@ const SERVER_SEND_BUFFER_SIZE: usize = Header::MAX_BIN_SIZE + MAX_SERVER_MESSAGE
 /// This resource is responsible for listening for incoming connections,
 /// receive and route packets.
 #[derive(bevy::prelude::Resource)]
-pub(crate) struct Server {
+pub(crate) struct NetworkManager {
     tcp_listener: TcpListener,
     udp_socket: UdpSocket,
     send_buffer: [u8; SERVER_SEND_BUFFER_SIZE],
@@ -39,15 +39,15 @@ pub(crate) struct Server {
     logger: log::Logger,
 }
 
-impl Drop for Server {
+impl Drop for NetworkManager {
     fn drop(&mut self) {
         self.send_tcp_to_all(ServerToClientTcpMessage::ServerClosing);
         self.logger.log("Shutting down network", log::LogLevel::Info);
     }
 }
 
-impl Server {
-    pub(crate) fn new(logger: log::Logger, config: &ServerConfig) -> Result<Server, std::io::Error> {
+impl NetworkManager {
+    pub(crate) fn new(logger: log::Logger, config: &ServerConfig) -> Result<NetworkManager, std::io::Error> {
         logger.log(&format!("Creating listener for tcp connections on port {}.", config.tcp_port), log::LogLevel::Info);
         let tcp_listener = TcpListener::bind(
             SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.tcp_port))
@@ -60,7 +60,7 @@ impl Server {
         )?;
         udp_socket.set_nonblocking(true)?;
 
-        Ok(Server {
+        Ok(NetworkManager {
             tcp_listener,
             udp_socket,
             send_buffer: [0u8; SERVER_SEND_BUFFER_SIZE],
@@ -81,7 +81,7 @@ impl Server {
         id
     }
 
-    pub(crate) fn handle_incoming(&mut self, _commands: &mut Commands) -> Result<(), std::io::Error> {
+    pub(crate) fn handle_incoming(&mut self, commands: &mut Commands) {
         loop {
             match self.tcp_listener.accept() {
                 Ok((mut tcp_stream, tcp_addr)) => {
@@ -89,12 +89,14 @@ impl Server {
                     if self.clients.len() < self.max_player_count as usize {
                         let id = self.get_next_id();
                         tcp_stream.set_nonblocking(true);
-                        let client = Client::new(id, tcp_stream, tcp_addr);
+                        
+                        // todo : spawn player in the world
+                        let spawn_command = commands.spawn(());
+                        
+                        let client = Client::new(id, tcp_stream, tcp_addr, spawn_command.id());
                         self.logger.log("Connection accepted, new player joined the game.", log::LogLevel::Info);
                         self.clients.insert(id, client);
                         self.send_tcp_to_client(id, ServerToClientTcpMessage::WelcomeIn);
-                        
-                        // todo : spawn player in the world
                     }
                     else {
                         self.logger.log("Server full, rejecting connection.", log::LogLevel::Info);
@@ -113,11 +115,9 @@ impl Server {
                 }
             }
         }
-
-        Ok(())
     }
 
-    pub(crate) fn handle_messages(&mut self, _commands: &mut Commands) -> Result<(), std::io::Error> {
+    pub(crate) fn handle_messages(&mut self, _commands: &mut Commands) {
         for (id, client) in self.clients.iter_mut() {
             while let Some(tcp_packet) = match client.incoming_tcp() {
                 Ok(ok) => ok,
@@ -130,12 +130,10 @@ impl Server {
 
 
                     #[allow(unreachable_patterns)] // backward compatibility
-                    _ => self.logger.log(&format!("Handler not implemented for {:?}", tcp_packet), log::LogLevel::Warning),
+                    _ => self.logger.log(&format!("Network manager handler not implemented for message {:?}", tcp_packet), log::LogLevel::Warning),
                 }
             }
         }
-
-        Ok(())
     }
 
     fn load_send_buffer_with_tcp(&mut self, message: ServerToClientTcpMessage) -> usize {
@@ -169,9 +167,21 @@ impl Server {
             }
         }
     }
-}
 
-pub(crate) fn network_update(mut commands: Commands, mut server_resource: ResMut<Server>) {
-    server_resource.handle_incoming(&mut commands);
-    server_resource.handle_messages(&mut commands);
+
+    /// First network manager update: 
+    /// Handles incoming players and messages, to be processed duting the current frame.
+    /// Therefore, this update should be before any game processing updates. 
+    pub(crate) fn recv_update(mut commands: Commands, mut network_manager: ResMut<NetworkManager>) {
+        network_manager.handle_incoming(&mut commands);
+        network_manager.handle_messages(&mut commands);
+    }
+
+    /// Second network manager update:
+    /// Send all messages after this frame update.
+    /// This should be after any game processing updates.
+    pub(crate) fn send_update() {
+
+    }
+
 }
